@@ -1,0 +1,57 @@
+!pip install nba_api
+
+from nba_api.stats.static import teams
+from nba_api.stats.endpoints import leaguegamefinder
+import pandas as pd
+import matplotlib.pyplot as plt
+
+nba_teams = teams.get_teams()
+
+#print(nba_teams)
+
+# convert to table ( rows= value, column= keys)
+
+def one_dict(list_dict):
+    
+    # 1- columns = keys
+    keys = list_dict[0].keys()
+    out_dict = {key:[] for key in keys}
+    
+    # 2- rows = value     
+    for dict_ in list_dict:
+        for key,value in dict_.items():
+            out_dict[key].append(value)
+    return out_dict
+
+dict_nba_team = one_dict(nba_teams)
+df_teams = pd.DataFrame(dict_nba_team)
+
+#df_teams.head()
+display(df_teams)
+
+#find warriors row 
+df_warriors = df_teams[df_teams['nickname']=='Warriors']
+display(df_warriors)
+
+#find warriors id
+id_warriors = df_warriors[['id']].values[0][0]
+display(id_warriors)
+
+#gamefinder - it has get() method 
+gamefinder = leaguegamefinder.LeagueGameFinder(team_id_nullable=id_warriors)
+gamefinder.get_json()
+games = gamefinder.get_data_frames()[0]
+games.head()
+
+#we can create 2 dataframes for Away & home games
+
+games_home=games[games['MATCHUP']=='GSW vs. TOR']
+games_away=games[games['MATCHUP']=='GSW @ TOR']
+
+#Plot (PLUS_MINUS) collumn
+
+fig, ax = plt.subplots()
+games_away.plot(x='GAME_DATE', y='PLUS_MINUS', ax=ax)
+games_home.plot(x='GAME_DATE', y='PLUS_MINUS', ax=ax)
+ax.legend(["away","home"])
+plt.show()
